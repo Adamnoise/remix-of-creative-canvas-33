@@ -88,7 +88,7 @@ function StudioShell() {
 
         );
       }
-      await importFiles(files, 'auto');
+      await importFiles(importedFiles, 'auto');
     } catch (error) {
       toast.dismiss(toastId);
       toast.error(
