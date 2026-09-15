@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Derived analytical warehouse artifacts
+analytics-output/

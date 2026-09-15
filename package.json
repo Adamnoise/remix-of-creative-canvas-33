@@ -18,7 +18,10 @@
     "supabase:parity": "node scripts/supabase/parity-check.mjs",
     "supabase:diagnose": "node scripts/supabase/diagnose.mjs",
     "supabase:ingest": "node scripts/supabase/ingest.mjs",
-    "supabase:check": "node scripts/supabase/bootstrap.mjs && node scripts/supabase/schema-check.mjs && node scripts/supabase/security-audit.mjs && node scripts/supabase/parity-check.mjs"
+    "supabase:check": "node scripts/supabase/bootstrap.mjs && node scripts/supabase/schema-check.mjs && node scripts/supabase/security-audit.mjs && node scripts/supabase/parity-check.mjs",
+    "analytics:extract": "node scripts/analytics/extract.mjs",
+    "analytics:analyze": "node scripts/analytics/analyze.mjs",
+    "analytics:run": "pnpm analytics:extract && pnpm analytics:analyze"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
@@ -49,7 +52,10 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.1",
     "jsdom": "^30.0.1",
+    "parquetjs-lite": "^0.8.7",
     "postcss": "latest",
+    "stream-chain": "^4.2.5",
+    "stream-json": "^3.6.0",
     "tailwindcss": "3.4.17",
     "typescript": "^5.5.4",
     "vite": "^5.2.0",
