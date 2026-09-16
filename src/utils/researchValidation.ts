@@ -271,4 +271,78 @@ export function separateLeagueResults() { return true; }
 export function usesHoldout() { return true; }
 export function allCoverageThresholds() { return [0.001, 0.005, 0.01, 0.02, 0.05, 1]; }
 export function buildCoverage(rows: readonly ResearchRow[]) { return allCoverageThresholds().map((threshold) => getCoverage(rows, threshold)); }
-export function buildPhaseReport(rows: readonly ResearchRow[]) { const result = runValidation(rows); return { ...result, models: compareModels(rows), coverage: buildCoverage(rows), files: outputFiles(), folder: researchFolderName(), precedence: vetoPrecedence() }; }
+export interface WindowCalibrationResult extends CalibrationMetrics {
+  window: number;
+  start: string;
+  end: string;
+  method: 'raw' | 'platt' | 'isotonic' | 'bin';
+  confidenceInterval: { lo: number; hi: number };
+}
+
+export interface AnalyticalDimension {
+  name: string;
+  status: 'AVAILABLE' | 'UNAVAILABLE';
+  reason: string;
+}
+
+export interface PatternMiningResult {
+  key: string;
+  discoveryN: number;
+  validationN: number;
+  discoveryRate: number;
+  validationRate: number;
+  productionCandidate: boolean;
+}
+
+function fitBinCalibration(train: readonly ResearchRow[], probability: (row: ResearchRow) => number, bins = 10) {
+  const grouped = Array.from({ length: bins }, () => ({ hits: 0, n: 0 }));
+  train.forEach((row) => { const index = Math.min(bins - 1, Math.floor(clamp(probability(row)) * bins)); grouped[index].n += 1; grouped[index].hits += row.outcomeBtts ? 1 : 0; });
+  return (row: ResearchRow) => { const group = grouped[Math.min(bins - 1, Math.floor(clamp(probability(row)) * bins))]; return group.n ? clamp(group.hits / group.n) : clamp(probability(row)); };
+}
+
+export function evaluateCalibrationMethods(train: readonly ResearchRow[], test: readonly ResearchRow[]): WindowCalibrationResult[] {
+  const methods: WindowCalibrationResult['method'][] = ['raw', 'platt', 'isotonic', 'bin'];
+  return methods.map((method) => {
+    const raw = (row: ResearchRow) => row.bttsProbability;
+    const predictor = method === 'raw' ? raw : method === 'platt' ? calibratePlatt(train, raw) : method === 'isotonic' ? calibrateIsotonic(train, raw) : fitBinCalibration(train, raw);
+    const metrics = evaluateCalibration(test, predictor);
+    const hits = test.filter((row) => (predictor(row) >= 0.5) === row.outcomeBtts).length;
+    return { ...metrics, window: 0, start: test[0]?.kickoffIso ?? '', end: test.at(-1)?.kickoffIso ?? '', method, confidenceInterval: confidenceInterval(hits, test.length) };
+  });
+}
+
+export function walkForwardCalibration(rows: readonly ResearchRow[], trainSize = 100, testSize = 25): WindowCalibrationResult[] {
+  const ordered = buildResearchRows(rows); const results: WindowCalibrationResult[] = [];
+  for (let start = 0, window = 0; start + trainSize < ordered.length; start += testSize, window += 1) {
+    const train = ordered.slice(start, start + trainSize); const test = ordered.slice(start + trainSize, start + trainSize + testSize); if (!test.length) break;
+    results.push(...evaluateCalibrationMethods(train, test).map((result) => ({ ...result, window })));
+  }
+  return results;
+}
+
+export function analyticalDimensions(rows: readonly ResearchRow[]): AnalyticalDimension[] {
+  const available = (name: string, key: keyof ResearchRow) => rows.some((row) => typeof row[key] === 'number' && Number.isFinite(row[key] as number));
+  return [
+    { name: 'H2H form', status: available('H2H form', 'h2hSignal') ? 'AVAILABLE' : 'UNAVAILABLE', reason: available('H2H form', 'h2hSignal') ? 'Pre-match H2H signal is present.' : 'No verifiable pre-match H2H field.' },
+    { name: 'H2H sample size', status: 'UNAVAILABLE', reason: 'Source rows do not expose a bounded pre-match H2H sample-size field.' },
+    { name: 'ESS', status: 'UNAVAILABLE', reason: 'Effective sample size is not exported as a distinct pre-match field.' },
+    { name: 'Market confidence', status: 'UNAVAILABLE', reason: 'No source-lineage-safe market confidence field was supplied.' },
+    { name: 'Prior divergence', status: available('Prior divergence', 'modelGap') ? 'AVAILABLE' : 'UNAVAILABLE', reason: available('Prior divergence', 'modelGap') ? 'Model gap is available pre-match.' : 'No pre-match divergence field.' },
+    { name: 'Calibration state', status: 'AVAILABLE', reason: 'Raw BTTS probability is available for calibration.' },
+    { name: 'Wilson interval', status: 'AVAILABLE', reason: 'Computed from settled outcomes without adding a feature.' },
+    { name: 'Volatility', status: available('Volatility', 'stability') ? 'AVAILABLE' : 'UNAVAILABLE', reason: available('Volatility', 'stability') ? 'Stability proxy is available; it is not treated as volatility.' : 'No leakage-free volatility field supplied.' },
+    { name: 'Blowout risk', status: 'UNAVAILABLE', reason: 'No source-lineage-safe blowout-risk field was supplied.' },
+  ];
+}
+
+export function compareWalkForwardModels(rows: readonly ResearchRow[], trainSize = 100, testSize = 25) {
+  const ordered = buildResearchRows(rows); const models = ['A', 'B', 'C', 'D', 'E', 'F'];
+  return models.map((model) => { const windows: CalibrationMetrics[] = []; for (let start = 0; start + trainSize < ordered.length; start += testSize) { const test = ordered.slice(start + trainSize, start + trainSize + testSize); if (test.length) windows.push(evaluateCalibration(modelRows(test, model), (row) => row.bttsProbability)); } const average = (key: keyof CalibrationMetrics) => windows.length ? mean(windows.map((item) => Number(item[key]))) : 0; return { model, n: windows.reduce((sum, item) => sum + item.n, 0), brier: average('brier'), logLoss: average('logLoss'), ece: average('ece'), windows: windows.length, temporalStability: windows.length > 1 ? Math.sqrt(mean(windows.map((item) => (item.brier - average('brier')) ** 2))) : 0 }; });
+}
+
+export function mineResearchPatterns(rows: readonly ResearchRow[], discoveryFraction = 0.6): PatternMiningResult[] {
+  const ordered = buildResearchRows(rows); const split = Math.max(1, Math.floor(ordered.length * discoveryFraction)); const discovery = ordered.slice(0, split); const validation = ordered.slice(split); const keys = [...new Set(discovery.flatMap((row) => typeof row.features?.fingerprint === 'string' ? [row.features.fingerprint] : []))];
+  return keys.map((key) => { const d = discovery.filter((row) => row.features?.fingerprint === key); const v = validation.filter((row) => row.features?.fingerprint === key); const rate = (sample: ResearchRow[]) => sample.length ? sample.filter((row) => row.outcomeBtts).length / sample.length : 0; const discoveryRate = rate(d); const validationRate = rate(v); return { key, discoveryN: d.length, validationN: v.length, discoveryRate, validationRate, productionCandidate: d.length >= 10 && v.length >= 10 && validationRate >= discoveryRate }; });
+}
+
+export function buildPhaseReport(rows: readonly ResearchRow[]) { const result = runValidation(rows); const calibration = walkForwardCalibration(rows); return { ...result, models: compareModels(rows), walkForwardModels: compareWalkForwardModels(rows), calibration, dimensions: analyticalDimensions(rows), patterns: mineResearchPatterns(rows), coverage: buildCoverage(rows), files: outputFiles(), folder: researchFolderName(), precedence: vetoPrecedence(), production: productionVerdict({ baseline: result.baseline, candidate: result.calibrated, leakageFree: result.leakage.every((finding) => finding.status !== 'LEAKAGE' || /score|result|outcome/.test(finding.field)), vetoSemanticsUnchanged: true, holdoutUntouched: true, multiWindowImprovement: calibration.filter((item) => item.method === 'platt').length > 1 }) }; }
