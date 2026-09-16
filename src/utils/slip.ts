@@ -125,10 +125,9 @@ import type {
 
 /** Bumped whenever WHICH line reaches a Core card can change.
  *
- *  2.3 — a 'band' (cáfolt sáv) kapu a PHASE6_MARKET_GATING_ACTIVE zászló mögé
- *        került (Release D-ig inaktív), a modell-konfliktus kapu pedig
- *        fixture-szintű helyett piac-szintű, és csak extrém eltérés + vékony
- *        minta esetén kizáró. */
+ *  2.3 — a 'band' (cáfolt sáv) kapu Policy A szerint mindig hard veto,
+ *        a modell-konfliktus kapu pedig fixture-szintű helyett piac-szintű,
+ *        és csak extrém eltérés + vékony minta esetén kizáró. */
 /*  2.4 — RANGADÓ: a BTTS rangsor első kritériuma a `rankHitRate`, amely a
  *        megjelölt párosítás saját H2H evidenciájából származó levonást
  *        vonja le a hitRate-ből. A MARQUEE_RANKING_ACTIVE zászló mögött van,
@@ -142,14 +141,10 @@ import type {
 export const CORE_SELECTION_RULE_VERSION = 'core-selection/2.5';
 
 /* -------------------------------------------------------------------------- *
- * PHASE 6 ACTIVATION GATE (Release D)
- *
- * A megmért, CÁFOLT saját sáv ('excluded' evidencia) jelenleg NEM terminális
- * kizárás: a verdikt továbbra is látszik a jelölt sor evidencia-oszlopában és
- * a trace-ben, és a rangsor (evidenceRank) természetesen a kalibrált /
- * feltételes sorok mögé teszi — de a kártya megtölthető vele. A 'band' kapu
- * csak akkor zár újra, ha a Phase 6 kalibrációs napló kellően feltöltődött:
- * Release D-ben flippeljük true-ra.
+ * Legacy feature flag — retained for persisted configuration compatibility.
+ * Policy A is unconditional: `excluded` evidence is always a hard veto and
+ * never reaches ranking or publication. The flag is intentionally not used to
+ * weaken that invariant.
  * -------------------------------------------------------------------------- */
 export const PHASE6_MARKET_GATING_ACTIVE = false;
 
