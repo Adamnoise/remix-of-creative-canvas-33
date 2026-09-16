@@ -275,7 +275,8 @@ export const GATE_DETAIL: Record<GateCondition, string> = {
   band:
   'A sor saját valószínűségi sávját MEGMÉRTÜK, és a jelzett valószínűség a ' +
   'tényleges beválás Wilson-intervallumán kívül van. Cáfolt evidencia — nem ' +
-  'adathiány. A kapu a Phase 6 aktiválásával (Release D) lesz újra kizáró.',
+  'adathiány. Policy A szerint ez terminális hard veto: a modell valószínűsége ' +
+  'nem írhatja felül.',
   model_conflict:
   'Feltételes evidencia mellett a piac mért aránya és a saját modellbecslése ' +
   'vékony mintán extrémen (≥ 25 százalékpont) eltér — a sor semmire nem támaszkodik.',
@@ -1413,12 +1414,11 @@ markets: SlipMarketPreferences | null)
     'egyszer számolnak, és egy kapun elbukott rekord soha nem tud levenni egy ' +
     'érvényes duplikátumot.'] :
     []),
-    ...(placedExcludedCount > 0 ?
-    [
-    `${placedExcludedCount} core sor CÁFOLT saját sávval került kártyára: a Phase 6 ` +
-    'market gate jelenleg INAKTÍV, ezért a mért cáfolat nem zár ki, csak látható ' +
-    'figyelmeztetés és rangsor-hátrány.'] :
-    []),
+  ...(placedExcludedCount > 0 ?
+  [
+  `${placedExcludedCount} core sor cáfolt saját sávval került kártyára: ez sérti a ` +
+  'Policy A invariánsát, amely szerint az excluded evidencia terminális hard veto.'] :
+  []),
     ...(!BTTS_DEATHZONE_GATE_ACTIVE ?
     [
     'BTTS halálzóna kapu (40–55% sáv, modell < 48%) SHADOW módban van — a rangsor ' +
