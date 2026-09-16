@@ -14,7 +14,8 @@ export function mineFingerprintHypotheses(rows: readonly FingerprintRow[], minN 
     const validationBrier = validation.length ? validation.reduce((sum, row) => sum + (row.predictiveProbability - (row.outcome ? 1 : 0)) ** 2, 0) / validation.length : 0;
     const baseline = splits[2].rows.length ? splits[2].rows.filter((row) => row.outcome).length / splits[2].rows.length : 0;
     const stable = matched[0].length >= minN && matched[2].length >= minN && validationRate > baseline && validationBrier < 0.25;
-    return { key, features: key.split('|'), discoveryN: matched[0].length, selectionN: matched[1].length, validationN: validation.length, holdoutN: holdout.length, validationRate, holdoutRate: holdout.length ? holdout.filter((row) => row.outcome).length / holdout.length : 0, validationBrier, status: stable ? 'CANDIDATE' : 'HYPOTHESIS' };
+    const status: FingerprintHypothesis['status'] = stable ? 'CANDIDATE' : 'HYPOTHESIS';
+    return { key, features: key.split('|'), discoveryN: matched[0].length, selectionN: matched[1].length, validationN: validation.length, holdoutN: holdout.length, validationRate, holdoutRate: holdout.length ? holdout.filter((row) => row.outcome).length / holdout.length : 0, validationBrier, status };
   }).sort((a, b) => Number(b.status === 'CANDIDATE') - Number(a.status === 'CANDIDATE') || b.validationRate - a.validationRate);
 }
 
