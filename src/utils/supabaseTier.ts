@@ -325,12 +325,12 @@ export interface IngestResult {
 }
 
 /**
- * Uploads local seasons to the Supabase cloud tier via the winmix-ingest edge
- * function. The function reads the service-role key from its own Deno env at
- * runtime, so the browser only needs the publishable/anon key for the gateway.
- * Opaque `sb_publishable_` keys go in `apikey` only — never as `Bearer`.
+ * Browser uploads are intentionally disabled.
  *
- * Idempotent: re-uploading the same seasons safely upserts (no duplicates).
+ * `winmix-ingest` is a privileged data mutation endpoint. A publishable/anon
+ * key is not an authorization mechanism for it, and the internal secret must
+ * never be shipped to the browser. Keep this typed result for the existing ops
+ * UI, but require ingestion through the server-side CLI/worker path.
  */
 export async function ingestSeasonsToCloud(params: {
   seasons: Array<{
@@ -359,75 +359,14 @@ export async function ingestSeasonsToCloud(params: {
   teamWeights?: Record<string, Record<string, number>>;
   teamAliasMap?: Record<string, Record<string, string>>;
 }): Promise<IngestResult> {
-  const env = readEnv();
-  if (!env) {
-    return {
-      success: false,
-      seasons: 0,
-      teams: 0,
-      matches: 0,
-      rejected: 0,
-      repaired: 0,
-      errors: ['A felhő tier nincs konfigurálva.'],
-    };
-  }
-
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), 30000);
-
-  try {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      apikey: env.anonKey,
-    };
-    if (!isOpaqueKey(env.anonKey)) {
-      headers.Authorization = `Bearer ${env.anonKey}`;
-    }
-    const res = await fetch(`${env.url}/functions/v1/winmix-ingest`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        seasons: params.seasons,
-        teamWeights: params.teamWeights,
-        teamAliasMap: params.teamAliasMap,
-      }),
-      signal: controller.signal,
-    });
-
-    const body = await res.json().catch(() => ({ error: 'Érvénytelen válasz a szervertől' }));
-
-    if (!res.ok) {
-      return {
-        success: false,
-        seasons: 0,
-        teams: 0,
-        matches: 0,
-        rejected: 0,
-        repaired: 0,
-        errors: [body.error ?? `HTTP ${res.status}`],
-      };
-    }
-
-    return {
-      success: body.success ?? false,
-      seasons: body.seasons ?? 0,
-      teams: body.teams ?? 0,
-      matches: body.matches ?? 0,
-      rejected: body.rejected ?? 0,
-      repaired: body.repaired ?? 0,
-      errors: body.errors ?? [],
-    };
-  } catch (e) {
-    return {
-      success: false,
-      seasons: 0,
-      teams: 0,
-      matches: 0,
-      rejected: 0,
-      repaired: 0,
-      errors: [e instanceof Error ? e.message : String(e)],
-    };
-  } finally {
-    window.clearTimeout(timer);
-  }
+  void params;
+  return {
+    success: false,
+    seasons: 0,
+    teams: 0,
+    matches: 0,
+    rejected: 0,
+    repaired: 0,
+    errors: ['A böngészőből indított adatfeltöltés le van tiltva; használd a szerveroldali ingest/worker folyamatot.'],
+  };
 }
