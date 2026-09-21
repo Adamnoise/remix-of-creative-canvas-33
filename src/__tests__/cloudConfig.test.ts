@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveCloudEnv, readCloudEnv } from '../utils/cloudConfig';
 import { cloudEndpointSummary, isCloudTierConfigured } from '../utils/supabaseTier';
 
+const PROJECT_URL = 'https://yvwnchyedxkajtwwkkqd.supabase.co';
 const FB = { url: 'https://fallback.example.supabase.co', anonKey: 'sb_publishable_fallback' };
 
 describe('cloudConfig — feloldási sorrend', () => {
@@ -9,13 +10,13 @@ describe('cloudConfig — feloldási sorrend', () => {
     expect(
       resolveCloudEnv(
         {
-          VITE_SUPABASE_URL: ' https://staging.example.supabase.co/ ',
+          VITE_SUPABASE_URL: ` ${PROJECT_URL}/ `,
           VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_staging',
         },
         FB,
       ),
     ).toEqual({
-      url: 'https://staging.example.supabase.co',
+        url: PROJECT_URL,
       anonKey: 'sb_publishable_staging',
       source: 'env',
     });
@@ -24,13 +25,13 @@ describe('cloudConfig — feloldási sorrend', () => {
   it('elfogadja a történeti VITE_SUPABASE_ANON_KEY nevet is', () => {
     const env = resolveCloudEnv(
       {
-        VITE_SUPABASE_URL: 'https://staging.example.supabase.co',
+        VITE_SUPABASE_URL: PROJECT_URL,
         VITE_SUPABASE_PUBLISHABLE_KEY: '',
-        VITE_SUPABASE_ANON_KEY: 'legacy-jwt-key',
+        VITE_SUPABASE_ANON_KEY: 'eyJlegacy-jwt-key',
       },
       FB,
     );
-    expect(env).toMatchObject({ anonKey: 'legacy-jwt-key', source: 'env' });
+    expect(env).toMatchObject({ anonKey: 'eyJlegacy-jwt-key', source: 'env' });
   });
 
   it.each([
@@ -38,13 +39,13 @@ describe('cloudConfig — feloldási sorrend', () => {
     ['üres URL', ''],
     ['szemét', 'nem-egy-url'],
     ['nem http protokoll', 'ftp://staging.example.supabase.co'],
-  ])('érvénytelen env URL (%s) → fallback', (_label, url) => {
+  ])('érvénytelen vagy idegen env URL (%s) → null', (_label, url) => {
     expect(
-      resolveCloudEnv({ VITE_SUPABASE_URL: url, VITE_SUPABASE_PUBLISHABLE_KEY: 'valami' }, FB),
-    ).toMatchObject({ source: 'fallback', url: FB.url, anonKey: FB.anonKey });
+      resolveCloudEnv({ VITE_SUPABASE_URL: url, VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_key' }, FB),
+    ).toBeNull();
   });
 
-  it('csak whitespace kulcs → fallback, nem env', () => {
+  it('csak whitespace kulcs → null, nem env', () => {
     expect(
       resolveCloudEnv(
         {
@@ -54,19 +55,19 @@ describe('cloudConfig — feloldási sorrend', () => {
         },
         FB,
       ),
-    ).toMatchObject({ source: 'fallback' });
+    ).toBeNull();
   });
 
-  it('null csak akkor, ha az env ÉS a fallback is érvénytelen', () => {
-    expect(resolveCloudEnv({}, { url: '', anonKey: '' })).toBeNull();
-    expect(resolveCloudEnv({}, { url: FB.url, anonKey: '' })).toBeNull();
+  it('idegen fallback konfigurációt sem használ', () => {
+    expect(resolveCloudEnv({}, FB)).toBeNull();
+    expect(resolveCloudEnv({}, { url: PROJECT_URL, anonKey: 'sb_publishable_fallback' })).toBeNull();
   });
 
-  it('a beépített fallback miatt a futó app sosem `unconfigured`', () => {
+  it('a futó app unconfigured marad kulcs nélkül', () => {
     const env = readCloudEnv();
-    expect(env).not.toBeNull();
-    expect(isCloudTierConfigured()).toBe(true);
-    expect(cloudEndpointSummary()?.url).toMatch(/^https:\/\//);
+    expect(env).toBeNull();
+    expect(isCloudTierConfigured()).toBe(false);
+    expect(cloudEndpointSummary()).toBeNull();
   });
 
   it('a feloldott konfiguráció a session alatt stabil és fagyasztott (cache)', () => {

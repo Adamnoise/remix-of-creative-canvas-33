@@ -93,6 +93,27 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  // Ingestion is a privileged server workflow. Browser publishable/anon keys
+  // must never be sufficient to mutate the historical dataset.
+  const ingestSecret = Deno.env.get("WINMIX_INGEST_SECRET") ?? "";
+  const suppliedSecret = req.headers.get("x-winmix-internal-secret") ?? "";
+  const suppliedBytes = new TextEncoder().encode(suppliedSecret);
+  const expectedBytes = new TextEncoder().encode(ingestSecret);
+  let secretMatches = suppliedBytes.length === expectedBytes.length && expectedBytes.length > 0;
+  if (secretMatches) {
+    let difference = 0;
+    for (let index = 0; index < expectedBytes.length; index += 1) {
+      difference |= suppliedBytes[index] ^ expectedBytes[index];
+    }
+    secretMatches = difference === 0;
+  }
+  if (!secretMatches) {
+    return new Response(JSON.stringify({ error: "Unauthorized ingest caller" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 

@@ -8,14 +8,14 @@
  * Resolution order:
  *  1. Vite environment (`.env` → VITE_SUPABASE_URL + VITE_SUPABASE_PUBLISHABLE_KEY,
  *     or the historical VITE_SUPABASE_ANON_KEY name)
- *  2. The baked-in URL below identifies the WinMix Supabase project. Its key is
- *     intentionally not bundled, so builds must provide the publishable key.
- *  3. `null` — genuinely unconfigured when the URL or publishable key is absent.
+ *  2. `null` — genuinely unconfigured when the URL or publishable key is absent.
+ *
+ * The browser must never silently switch projects. A publishable key is the only
+ * credential accepted here; secret/service-role keys are rejected explicitly.
  */
 
 const FALLBACK_URL = 'https://yvwnchyedxkajtwwkkqd.supabase.co';
-// Do not bundle a key from another Supabase project as a fallback.
-const FALLBACK_ANON_KEY = '';
+const REQUIRED_PROJECT_REF = 'yvwnchyedxkajtwwkkqd';
 
 export interface CloudEnv {
   url: string;
@@ -46,8 +46,18 @@ function isValidHttpUrl(value: string): boolean {
   }
 }
 
-function isNonEmptyKey(value: string): boolean {
-  return value.trim().length > 0;
+function isPublishableKey(value: string): boolean {
+  const key = value.trim();
+  if (!key || key.startsWith('sb_secret_') || key.startsWith('service_role')) return false;
+  return key.startsWith('sb_publishable_') || key.startsWith('eyJ');
+}
+
+function isRequiredProject(value: string): boolean {
+  try {
+    return new URL(value).hostname === `${REQUIRED_PROJECT_REF}.supabase.co`;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -57,7 +67,7 @@ function isNonEmptyKey(value: string): boolean {
  */
 export function resolveCloudEnv(
   env: Record<string, string | undefined>,
-  fallback: { url: string; anonKey: string } = { url: FALLBACK_URL, anonKey: FALLBACK_ANON_KEY }
+  fallback: { url: string; anonKey: string } = { url: FALLBACK_URL, anonKey: '' }
 ): CloudEnv | null {
   const envUrl = (env['VITE_SUPABASE_URL'] ?? '').trim();
   const envKey =
@@ -65,7 +75,7 @@ export function resolveCloudEnv(
     (env['VITE_SUPABASE_ANON_KEY'] ?? '').trim();
 
 
-  if (isValidHttpUrl(envUrl) && isNonEmptyKey(envKey)) {
+  if (isValidHttpUrl(envUrl) && isRequiredProject(envUrl) && isPublishableKey(envKey)) {
     return Object.freeze({
       url: envUrl.replace(/\/+$/, ''),
       anonKey: envKey,
@@ -73,14 +83,9 @@ export function resolveCloudEnv(
     });
   }
 
-  if (isValidHttpUrl(fallback.url) && isNonEmptyKey(fallback.anonKey)) {
-    return Object.freeze({
-      url: fallback.url.replace(/\/+$/, ''),
-      anonKey: fallback.anonKey,
-      source: 'fallback' as const
-    });
-  }
-
+  // Keep the argument for backwards-compatible tests/callers, but never use a
+  // fallback credential or allow an alternate Supabase project in production.
+  void fallback;
   return null;
 }
 
