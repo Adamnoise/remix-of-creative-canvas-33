@@ -26,6 +26,7 @@ import {
 '../../utils/slip';
 import type { CoreTier } from '../../types/winmix';
 import { CoreEvidenceBadge } from './CoreEvidenceBadge';
+import { UnderconfidentBadge } from './UnderconfidentBadge';
 import { CoreTierBadge } from './CoreTierBadge';
 
 interface RecommendationCardProps {
@@ -188,6 +189,11 @@ export function RecommendationCard({
             snapshot={pattern.coreEvidence ?? null}
             withCoverage={evidenceLevelOf(pattern) === 'conditional'} /> :
 
+          null}
+          {pattern && !plain && !isJoker ?
+          <UnderconfidentBadge
+            snapshot={pattern.coreEvidence ?? null}
+            diagnosis={pattern.marketBandDiagnosis} /> :
           null}
           {pattern && !plain && risk ?
           <span

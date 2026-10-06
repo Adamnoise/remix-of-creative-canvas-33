@@ -92,6 +92,17 @@ function disprovedOwnBand(): MarketCalibrationBand[] {
   return [bandOf('p55_65', 671, 228, MODEL_PROB)];
 }
 
+/** Own band measured, but reality hits MORE often than signalled — underconfident.
+ *  The model underestimates BTTS: 75 hits out of 100 at avgP=0.60 → hit rate 0.75. */
+function underconfidentOwnBand(): MarketCalibrationBand[] {
+  return [bandOf('p55_65', 100, 75, MODEL_PROB)];
+}
+
+/** Own band measured, with a noisy (high-variance) sample — noise diagnosis. */
+function noisyOwnBand(): MarketCalibrationBand[] {
+  return [bandOf('p55_65', 50, 15, MODEL_PROB)];
+}
+
 /** Own band with EXACTLY `n` audited observations and a hit rate far off the signal. */
 function ownBandAt(n: number, hits: number): MarketCalibrationBand[] {
   return [bandOf('p55_65', n, hits, MODEL_PROB)];
@@ -367,6 +378,14 @@ export function runCoreEvidenceSuite(): CoreEvidenceSuiteResult {
     'disproved'
   ),
   evidenceCase(
+    'Underconfident saját sáv (beválás a jelzés FELETT)',
+    'A modell alulbecsli a BTTS-t — a valóság GYAKRABBAN hozza. ' +
+    'Ez nem cáfolat: a sor feltételes marad, nem kizárt.',
+    registered(underconfidentOwnBand()),
+    'conditional',
+    'divergent_environment'
+  ),
+  evidenceCase(
     'Vékony saját sáv, egyező bővített környezet',
     'A bővített környezet MEGERŐSÍTHET: kalibrált, láthatóan bővített sávval.',
     registered(thinOwnBandWithAgreeingNeighbours()),
@@ -541,6 +560,13 @@ export function runCoreEvidenceSuite(): CoreEvidenceSuiteResult {
     typeof excludedPattern.coreEvidence?.ciLo === 'number' &&
     typeof excludedPattern.coreEvidence?.ciHi === 'number',
     `${excludedPattern.coreEvidence?.ciLo ?? '—'} … ${excludedPattern.coreEvidence?.ciHi ?? '—'}`
+  ),
+  check(
+    'Policy A irányfüggő: overconfident → excluded, underconfident → conditional',
+    exclusionAllowed({ n: BAND_MIN_SAMPLE, evaluable: true, calibrated: false, diagnosis: 'overconfident' }) &&
+    !exclusionAllowed({ n: BAND_MIN_SAMPLE, evaluable: true, calibrated: false, diagnosis: 'underconfident' }) &&
+    exclusionAllowed({ n: BAND_MIN_SAMPLE, evaluable: true, calibrated: false, diagnosis: 'noise' }),
+    'overconfident kizár, underconfident nem, noise kizár'
   )];
 
 

@@ -31,14 +31,17 @@ export function RoundBuilder({
   const empty = pool.length === 0;
 
   return (
-    <section className="flex min-w-0 flex-col rounded-lg border border-border bg-card shadow-panel">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-elevated/60 px-3 py-2.5 sm:px-4 sm:py-3">
-        <h3 className="flex items-center gap-2 text-ui-base font-bold text-foreground">
-          <span aria-hidden={true}>{LEAGUE_FLAG[league]}</span>
-          {LEAGUE_LABEL[league]} forduló
-        </h3>
-        <Chip tone={filled === fixtures.length ? 'signal' : 'neutral'}>
-          {filled} / {fixtures.length}
+    <section className="predictor-builder group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-panel transition-colors hover:border-border-strong">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle bg-surface-2/80 px-4 py-3.5 sm:px-5">
+        <div className="min-w-0">
+          <p className="section-label text-muted-foreground">Csapatpárok</p>
+          <h3 className="mt-1 flex items-center gap-2 text-ui-base font-semibold text-foreground">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-background text-sm" aria-hidden={true}>{LEAGUE_FLAG[league]}</span>
+            {LEAGUE_LABEL[league]}
+          </h3>
+        </div>
+        <Chip tone={filled === fixtures.length ? 'signal' : 'neutral'} className="rounded-full px-2.5">
+          {filled} / {fixtures.length} kész
         </Chip>
       </div>
 
@@ -56,11 +59,14 @@ export function RoundBuilder({
             <li
               key={fixture.id}
               className={cn(
-                'flex items-center gap-2 px-2.5 py-2 sm:px-3',
-                complete ? 'bg-background/40' : undefined
+                'predictor-fixture-row flex items-center gap-2 border-l-2 px-3 py-2.5 transition-colors sm:px-4',
+                complete ? 'border-l-signal bg-signal/[0.035]' : 'border-l-transparent hover:bg-surface-1'
               )}>
               
-                <span className="w-4 shrink-0 text-center font-mono text-ui-xs text-muted-foreground">
+                <span className={cn(
+                  'flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[10px] font-semibold',
+                  complete ? 'bg-signal-soft text-signal' : 'bg-background text-muted-foreground'
+                )}>
                   {fixture.slot}
                 </span>
 
@@ -75,9 +81,8 @@ export function RoundBuilder({
                   onChange={(key) => onSelect(fixture.id, 'home', key)} />
                 
                   <span
-                  className="hidden shrink-0 font-mono text-ui-2xs uppercase text-muted-foreground sm:inline"
+                  className="hidden shrink-0 rounded-full border border-border-subtle px-1.5 py-0.5 font-mono text-[9px] uppercase text-muted-foreground sm:inline"
                   aria-hidden={true}>
-                  
                     vs
                   </span>
                   <TeamSelect
@@ -89,15 +94,15 @@ export function RoundBuilder({
                 
                 </div>
 
-                <span className="w-8 shrink-0 text-right font-mono text-ui-xs text-signal">
-                  {count > 0 ? `✦${count}` : <span className="text-muted-foreground">—</span>}
+                <span className="w-10 shrink-0 text-right font-mono text-[10px] text-signal">
+                  {count > 0 ? `${count} minta` : <span className="text-muted-foreground">—</span>}
                 </span>
                 <button
                 type="button"
                 aria-label={`${fixture.slot}. sor kiürítése`}
                 disabled={!fixture.homeKey && !fixture.awayKey}
                 onClick={() => onClear(fixture.id)}
-                className="tap flex h-8 w-8 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-elevated hover:text-negative disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground">
+                className="tap flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-negative-soft hover:text-negative disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground">
                 
                   <Eraser className="h-3.5 w-3.5" aria-hidden={true} />
                 </button>

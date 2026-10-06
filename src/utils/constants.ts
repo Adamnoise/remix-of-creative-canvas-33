@@ -35,6 +35,8 @@ export const PATTERN_WARM_SAMPLE = 5;
 export const PATTERN_HOT_SAMPLE = 15;
 /** Minimum stability for the safety core. */
 export const CORE_STABILITY_MIN = 55;
+/** Shadow stability floor for BTTS candidates — used only for trace diagnostics. */
+export const CORE_STABILITY_MIN_SHADOW = 52;
 /** Patterns below this shrunk rate are not surfaced at all. */
 export const PATTERN_MIN_RATE = 0.5;
 /** HT-dependent pattern families need this share of meetings with HT data. */

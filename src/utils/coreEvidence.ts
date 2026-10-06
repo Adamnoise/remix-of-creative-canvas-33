@@ -72,7 +72,7 @@ import type {
  * `1.1` is the version in which exclusion became gated by the single
  * {@link exclusionAllowed} predicate and every snapshot became sealed.
  */
-export const CORE_EVIDENCE_RULE_VERSION = 'core-evidence/1.1';
+export const CORE_EVIDENCE_RULE_VERSION = 'core-evidence/1.2';
 
 /**
  * How many neighbouring bands on EACH side may be merged in to reach the
@@ -108,9 +108,10 @@ export const EVIDENCE_COPY: Record<
     tone: 'negative',
     detail:
     'A sor saját sávját legalább ' +
-    `${BAND_MIN_SAMPLE} auditált megfigyelésen megmértük, és a jelzett ` +
-    'valószínűség a tényleges beválás intervallumán KÍVÜL van. Cáfolt ' +
-    'evidencia — core kártyára feltételesen sem kerülhet.'
+    `${BAND_MIN_SAMPLE} auditált megfigyelésen megmértük, és a modell ` +
+    'TÚLZÓZÁSA miatt a jelzett valószínűség a tényleges beválás ' +
+    'intervalluma FELETT van. Cáfolt evidencia — core kártyára ' +
+    'feltételesen sem kerülhet.'
   }
 };
 
@@ -136,6 +137,14 @@ export interface EvidenceBandLike {
   n: number;
   evaluable: boolean;
   calibrated: boolean;
+  /**
+   * Direction of the divergence. An `overconfident` band (model overestimates)
+   * is a genuine exclusion — the model says BTTS is likely but reality says no.
+   * An `underconfident` band (model underestimates) is NOT an exclusion for
+   * BTTS-Yes: reality hits MORE often than signalled, so the line is safer
+   * than the model claims. Only `overconfident` and `noise` may exclude.
+   */
+  diagnosis?: BandDiagnosis;
 }
 
 /**
@@ -161,10 +170,34 @@ export function bandMeasured(band: EvidenceBandLike | null | undefined): boolean
  * Consequently `0 / 20`, `1 / 20`, … `19 / 20` audited observations can NEVER
  * yield an exclusion, and never a "Cáfolt sáv" caption.
  */
+/**
+ * Diagnoses that justify a hard exclusion. `overconfident` means the model
+ * overestimates BTTS — reality hits less often than signalled, so the line is
+ * genuinely refuted. `noise` means the sample is too scattered to trust.
+ *
+ * `underconfident` is NOT in this set: the model underestimates BTTS, reality
+ * hits MORE often — the line is safer than signalled, not refuted. Excluding
+ * an underconfident BTTS-Yes candidate loses real wins (see Girona–San
+ * Sebastian, Bilbao–Villarreal, Valencia–Sevilla in the round audit).
+ */
+const EXCLUDING_DIAGNOSES: ReadonlySet<BandDiagnosis> = new Set([
+  'overconfident',
+  'noise',
+]);
+
 export function exclusionAllowed(band: EvidenceBandLike | null | undefined): boolean {
   if (!band) return false;
   if (!bandMeasured(band)) return false;
-  return band.calibrated === false;
+  if (band.calibrated) return false;
+  // Direction-aware: only exclude when the model OVERESTIMATES.
+  // An underconfident band means reality is better than signalled —
+  // the BTTS-Yes line is safer, not refuted.
+  const diagnosis = band.diagnosis;
+  if (diagnosis !== undefined) {
+    return EXCLUDING_DIAGNOSES.has(diagnosis);
+  }
+  // No diagnosis available — fall back to the original behaviour.
+  return true;
 }
 
 /* -------------------------------------------------------------------------- *
@@ -422,9 +455,10 @@ export function resolveCoreEvidence(input: CoreEvidenceInput): CoreEvidenceSnaps
    * a disproved band. */
   if (bandMeasured(own) && own) {
     const excluded = exclusionAllowed(own);
+    const isUnderconfident = own.diagnosis === 'underconfident';
     return sealSnapshot({
-      level: excluded ? 'excluded' : 'calibrated',
-      kind: excluded ? 'disproved' : 'verified',
+      level: excluded ? 'excluded' : isUnderconfident ? 'conditional' : 'calibrated',
+      kind: excluded ? 'disproved' : isUnderconfident ? 'divergent_environment' : 'verified',
       bandKey: homeKey,
       bandLabel: homeLabel,
       environmentKeys: [homeKey],
@@ -442,6 +476,10 @@ export function resolveCoreEvidence(input: CoreEvidenceInput): CoreEvidenceSnaps
       `A ${homeLabel} sávban ${own.n} auditált megfigyelés van, és ` +
       `${DIAGNOSIS_PHRASE[own.diagnosis] ?? 'a mérés nem igazolta a jelzést'}. ` +
       'Ez cáfolt evidencia, nem adathiány.' :
+      isUnderconfident ?
+      `A ${homeLabel} sávban ${own.n} auditált megfigyelés — ` +
+      `${DIAGNOSIS_PHRASE['underconfident']}. A beválás a jelzés FÖLÖTT van, ` +
+      'ez nem cáfolat: a sor biztonságosabb, mint a modell jelzi. Feltételes.' :
       `A ${homeLabel} sávban ${own.n} auditált megfigyelés — a jelzett ` +
       'valószínűség a tényleges beválás Wilson-intervallumán belül van.'
     });

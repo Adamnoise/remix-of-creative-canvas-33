@@ -81,7 +81,7 @@
 
  */
 
-import { CORE_STABILITY_MIN } from './constants';
+import { CORE_STABILITY_MIN, CORE_STABILITY_MIN_SHADOW } from './constants';
 import { CORE_EVIDENCE_RULE_VERSION, coherentLevelOf, evidenceRank } from './coreEvidence';
 import { BTTS_PROFILE_RULE_VERSION, shouldAutoActivateVeto } from './bttsProfile';
 import { MARQUEE_RANKING_ACTIVE } from './marqueePairs';
@@ -98,7 +98,7 @@ import {
   specNullReasonOf,
   type QuickStrategySpec } from
 './coreStrategy';
-import { DECISION_THRESHOLDS, SECONDARY_MARKET_THRESHOLDS } from './decision';
+import { DECISION_THRESHOLDS, SECONDARY_MARKET_THRESHOLDS, bttsShadowQuadrantOf } from './decision';
 import {
   coreCardMarkets,
   isTeamGoalCode,
@@ -139,7 +139,7 @@ import type {
  *        `isBttsEligibleForCore()` (`coreEligibility.ts`) a canonicalCandidates()
  *        ELŐTT fut, gate-first tölcsér. OFF állapotban bitre azonos a 2.4
  *        sorrenddel. */
-export const CORE_SELECTION_RULE_VERSION = 'core-selection/2.6';
+export const CORE_SELECTION_RULE_VERSION = 'core-selection/2.8';
 
 /* -------------------------------------------------------------------------- *
  * PHASE 6 ACTIVATION GATE (Release D)
@@ -152,6 +152,14 @@ export const CORE_SELECTION_RULE_VERSION = 'core-selection/2.6';
  * Release D-ben flippeljük true-ra.
  * -------------------------------------------------------------------------- */
 export const PHASE6_MARKET_GATING_ACTIVE = false;
+
+/**
+ * Shadow flag for BTTS stability floor relaxation. When false (default), the
+ * live `CORE_STABILITY_MIN = 55` is used. When true, BTTS candidates use the
+ * lowered `CORE_STABILITY_MIN_SHADOW = 52`. The shadow verdict is always
+ * computed for the trace regardless of this flag.
+ */
+export const BTTS_STABILITY_RELAXED_ACTIVE = false;
 
 /* A modell-konfliktus kemény kapujának PIAC-SZINTŰ küszöbei. Kizárás csak
  * akkor, ha a mért hitRate és a piac SAJÁT modelProb-becslése közti eltérés
@@ -316,7 +324,12 @@ export function coreConfidenceOf(pattern: PatternHit): CoreConfidenceReading {
   };
 }
 
-/** The quadrant the gate actually reads. */
+/** The quadrant the gate actually reads — LIVE thresholds only.
+ *
+ * The pre-computed `marketDecision` / `decision` from the pipeline is used
+ * as-is. Shadow quadrant computation (for the trace) is separate: see
+ * {@link computeBttsShadowVerdict}.
+ */
 export function effectiveDecisionOf(pattern: PatternHit): DecisionQuadrant {
   return isSecondaryMarket(pattern) ? pattern.marketDecision ?? pattern.decision : pattern.decision;
 }
@@ -371,9 +384,67 @@ export function coreQualityFailures(pattern: PatternHit): GateCondition[] {
   const quadrant = effectiveDecisionOf(pattern);
   if (quadrant !== 'actionable' && quadrant !== 'volatile') failed.push('decision');
   if (pattern.sufficiency === 'cold') failed.push('sample');
-  if (pattern.stability < CORE_STABILITY_MIN) failed.push('stability');
+  const stabilityFloor = BTTS_STABILITY_RELAXED_ACTIVE && pattern.code === 'BTTS'
+    ? CORE_STABILITY_MIN_SHADOW
+    : CORE_STABILITY_MIN;
+  if (pattern.stability < stabilityFloor) failed.push('stability');
   if (isTeamGoalCoreBlocked(pattern)) failed.push('market_uncalibrated');
   return failed;
+}
+
+/** Which threshold relaxation(s) would have let this BTTS candidate through. */
+export type BttsShadowRelaxation = 'quadrant' | 'stability';
+
+/** Shadow verdict for a BTTS Core candidate — never affects placement. */
+export interface BttsShadowVerdict {
+  /** True when the candidate would have passed ALL gates under the relaxed thresholds. */
+  wouldPass: boolean;
+  /** Which relaxations were needed (empty = already passing, or not BTTS). */
+  relaxedBy: BttsShadowRelaxation[];
+  /** The shadow quadrant, or null for non-BTTS patterns. */
+  shadowQuadrant: DecisionQuadrant | null;
+}
+
+/**
+ * Compute the SHADOW verdict for a BTTS candidate: would it have passed the
+ * Core gates under the relaxed quadrant (pMin=0.54, cMin=25) and stability
+ * (52) thresholds? This is diagnostic only — it never changes which lines
+ * reach a Core card. The trace panel shows it so that walk-forward OOS
+ * validation can accumulate evidence before the flags go live.
+ */
+export function computeBttsShadowVerdict(pattern: PatternHit): BttsShadowVerdict | null {
+  if (pattern.code !== 'BTTS') return null;
+
+  const relaxedBy: BttsShadowRelaxation[] = [];
+  const liveFailed = coreQualityFailures(pattern);
+
+  const modelProb = pattern.modelProb;
+  if (typeof modelProb !== 'number') return null;
+
+  const confidence = isSecondaryMarket(pattern) ? pattern.marketConfidence : pattern.stability;
+  const shadowQ = bttsShadowQuadrantOf(modelProb, confidence);
+
+  if (liveFailed.includes('decision')) {
+    if (shadowQ === 'actionable' || shadowQ === 'volatile') {
+      relaxedBy.push('quadrant');
+    }
+  }
+
+  if (liveFailed.includes('stability')) {
+    if (pattern.stability >= CORE_STABILITY_MIN_SHADOW) {
+      relaxedBy.push('stability');
+    }
+  }
+
+  const otherFailures = liveFailed.filter(
+    (f) => f !== 'decision' && f !== 'stability'
+  );
+
+  return {
+    wouldPass: otherFailures.length === 0 && relaxedBy.length > 0,
+    relaxedBy,
+    shadowQuadrant: shadowQ
+  };
 }
 
 /** The full strict gate of one side of the slip. */

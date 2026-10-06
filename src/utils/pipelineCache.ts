@@ -37,6 +37,7 @@ export interface CachedPipelineState {
   settings: WinmixSettings;
   round: FixtureRound;
   slips: Slip[];
+  manualWeightOverrides?: WeightMap;
 }
 
 let dbPromise: Promise<IDBDatabase | null> | null = null;

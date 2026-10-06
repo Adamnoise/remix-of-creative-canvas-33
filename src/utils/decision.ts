@@ -83,6 +83,49 @@ export const SECONDARY_MARKET_THRESHOLDS: DecisionThresholdSet = Object.freeze({
 });
 
 /**
+ * Relaxed BTTS-specific cut-points. The default secondary thresholds
+ * (pMin=0.58, cMin=56) were found to exclude four genuine BTTS winners
+ * (Madrid F.–Getafe at 54.5%/29, Bilbao–Villarreal at 54.9%/26,
+ * Valencia–Sevilla at 56.3%/26) while correctly excluding Osasuna–Bilbao
+ * (51.9%/20). Lowering pMin to 0.54 and cMin to 25 keeps all four winners
+ * and still excludes Osasuna–Bilbao.
+ *
+ * Shadow flag: when `BTTS_QUADRANT_RELAXED_ACTIVE` is false (default), the
+ * relaxed thresholds are used only for shadow diagnostics. When true, they
+ * replace the secondary thresholds for BTTS Core selection.
+ */
+export const BTTS_QUADRANT_RELAXED_ACTIVE = false;
+
+export const BTTS_RELAXED_THRESHOLDS: DecisionThresholdSet = Object.freeze({
+  pMin: 0.54,
+  cMin: 25,
+  ignorePMax: 0.50
+});
+
+/**
+ * Returns the effective threshold set for a BTTS Core candidate. When the
+ * relaxed flag is active, BTTS candidates use the lowered cut-points; all
+ * other secondary markets keep the original thresholds.
+ */
+export function bttsThresholdSet(): DecisionThresholdSet {
+  return BTTS_QUADRANT_RELAXED_ACTIVE
+    ? BTTS_RELAXED_THRESHOLDS
+    : SECONDARY_MARKET_THRESHOLDS;
+}
+
+/**
+ * Compute the SHADOW quadrant for a BTTS candidate using the relaxed
+ * thresholds. This NEVER affects placement — it is only used in the trace
+ * to show whether a candidate would have passed under the lowered cut-points.
+ */
+export function bttsShadowQuadrantOf(
+  modelProb: number,
+  confidence: number)
+: DecisionQuadrant {
+  return decisionQuadrantOf(modelProb, confidence, BTTS_RELAXED_THRESHOLDS);
+}
+
+/**
  * Place a (probability, confidence) pair in the decision matrix.
  *
  * `actionable ⟺ (P ≥ pMin) AND (C ≥ cMin)`. Otherwise: below `ignorePMax` the

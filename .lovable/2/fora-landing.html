@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fora — Community platform for creators</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @font-face {
+    font-family: 'Fragment Mono';
+    src: url('https://fonts.gstatic.com/s/fragmentmono/v6/4iCr6K5wfMRRjxp0DA6-2CLnB4NHhg.woff2') format('woff2');
+    font-weight: 400;
+  }
+  @font-face {
+    font-family: 'Inter Display';
+    src: url('https://framerusercontent.com/assets/43sJ6MfOPh1LCJt46OvyDuSbA6o.woff2') format('woff2');
+    font-weight: 700;
+  }
+  @font-face {
+    font-family: 'Inter Display';
+    src: url('https://framerusercontent.com/assets/5vvr9Vy74if2I6bQbJvbw7SY1pQ.woff2') format('woff2');
+    font-weight: 500;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: #171717;
+    color: #FFF3F0;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .font-display { font-family: 'Inter Display', 'Inter', sans-serif; }
+  .font-mono { font-family: 'Fragment Mono', monospace; }
+
+  /* Nav */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 40px;
+    background: rgba(23,23,23,0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 18px;
+    color: #FFF3F0;
+    text-decoration: none;
+  }
+
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #FFF3F0;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-size: 14px;
+    color: rgba(255,255,255,0.65);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: #FFF3F0; }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .btn-login {
+    font-size: 14px;
+    color: rgba(255,255,255,0.65);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .btn-login:hover { color: #FFF3F0; }
+
+  .btn-primary {
+    background: rgba(255,255,255,0.82);
+    color: #01101D;
+    border: none;
+    border-radius: 768px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+    display: inline-block;
+  }
+  .btn-primary:hover { background: rgba(255,255,255,0.95); }
+
+  .btn-primary-lg {
+    background: rgba(255,255,255,0.82);
+    color: #01101D;
+    border: none;
+    border-radius: 768px;
+    padding: 14px 32px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+    display: inline-block;
+  }
+  .btn-primary-lg:hover { background: rgba(255,255,255,0.95); }
+
+  /* Hero */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 140px;
+    padding-bottom: 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Hero gradient background — mimics the screenshot's dark gradient with warm reddish-brown tones */
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      #2a2028 0%,
+      #231e22 18%,
+      #1c1a1e 35%,
+      #171717 55%,
+      #171717 100%
+    );
+    z-index: 0;
+  }
+
+  /* Subtle warm radial glow top-center */
+  .hero-glow {
+    position: absolute;
+    top: -80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 700px;
+    height: 500px;
+    background: radial-gradient(ellipse at center, rgba(120,70,60,0.18) 0%, transparent 70%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 680px;
+    padding: 0 24px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 768px;
+    padding: 6px 16px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 28px;
+    letter-spacing: 0.01em;
+  }
+
+  .hero-title {
+    font-family: 'Inter Display', 'Inter', sans-serif;
+    font-size: clamp(42px, 6vw, 68px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: #FFF3F0;
+    margin-bottom: 20px;
+  }
+
+  .hero-sub {
+    font-size: 16px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.6;
+    max-width: 420px;
+    margin-bottom: 36px;
+  }
+
+  /* App mockup */
+  .mockup-wrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 760px;
+    margin: 48px auto 0;
+    padding: 0 24px;
+  }
+
+  .mockup-frame {
+    background: rgba(28,28,28,0.9);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    min-height: 360px;
+  }
+
+  .mockup-sidebar {
+    width: 160px;
+    flex-shrink: 0;
+    background: rgba(20,20,20,0.95);
+    border-right: 1px solid rgba(255,255,255,0.06);
+    padding: 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .sidebar-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    margin-bottom: 8px;
+  }
+  .sidebar-search-bar {
+    flex: 1;
+    height: 24px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 6px;
+  }
+  .sidebar-search-icon {
+    color: rgba(255,255,255,0.3);
+    font-size: 13px;
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+    cursor: pointer;
+    border-radius: 0;
+    transition: background 0.15s, color 0.15s;
+  }
+  .sidebar-item:hover,
+  .sidebar-item.active {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.8);
+  }
+  .sidebar-item svg { width: 14px; height: 14px; opacity: 0.7; }
+
+  .mockup-main {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .mockup-main img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Cookie banner */
+  .cookie-banner {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    background: rgba(30,30,30,0.97);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 14px 16px;
+    max-width: 200px;
+    z-index: 10;
+  }
+  .cookie-banner p {
+    font-size: 11px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .cookie-banner a { color: rgba(255,255,255,0.8); }
+  .cookie-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 768px;
+    padding: 5px 14px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.75);
+    cursor: pointer;
+    float: right;
+  }
+
+  /* Text section */
+  .text-section {
+    background: #171717;
+    padding: 120px 24px 80px;
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .text-block {
+    max-width: 520px;
+    margin-bottom: 52px;
+  }
+
+  .text-block p {
+    font-size: clamp(18px, 2.5vw, 22px);
+    line-height: 1.55;
+    color: rgba(255,255,255,0.55);
+    font-weight: 400;
+  }
+
+  /* Animate on scroll */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .fade-up.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Stagger delays */
+  .delay-1 { transition-delay: 0.1s; }
+  .delay-2 { transition-delay: 0.2s; }
+  .delay-3 { transition-delay: 0.3s; }
+
+  html { scroll-behavior: smooth; }
+
+  section[id] { scroll-margin-top: 88px; }
+
+  /* Shared section shell */
+  .section {
+    background: #171717;
+    padding: 96px 24px;
+  }
+  .section-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 48px;
+    flex-wrap: wrap;
+    margin-bottom: 56px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding-bottom: 40px;
+  }
+  .section-head-left { max-width: 480px; }
+  .section-head-right { max-width: 380px; flex: 1; }
+  .section-title {
+    font-family: 'Inter Display', 'Inter', sans-serif;
+    font-size: clamp(30px, 3.4vw, 42px);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    color: #FFF3F0;
+  }
+  .section-title .dim { color: rgba(255,255,255,0.5); }
+  .section-sub {
+    font-size: 15px;
+    line-height: 1.6;
+    color: rgba(255,255,255,0.5);
+  }
+
+  /* Feature cards */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .feature-card {
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .feature-tag {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    font-family: 'Fragment Mono', monospace;
+  }
+  .feature-card h4 {
+    font-family: 'Inter Display', 'Inter', sans-serif;
+    font-size: 19px;
+    font-weight: 500;
+    color: #FFF3F0;
+    line-height: 1.35;
+  }
+  .feature-card p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(255,255,255,0.5);
+  }
+  .feature-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    font-size: 13px;
+    color: rgba(255,255,255,0.45);
+  }
+  .feature-note svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.6; }
+
+  /* Pricing */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    align-items: stretch;
+  }
+  .price-card {
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+  }
+  .price-card.featured {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.2);
+  }
+  .price-label {
+    font-family: 'Fragment Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 18px;
+  }
+  .price-amount {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .price-amount .num {
+    font-family: 'Inter Display', 'Inter', sans-serif;
+    font-size: 38px;
+    font-weight: 500;
+    color: #FFF3F0;
+    letter-spacing: -0.02em;
+  }
+  .price-amount .per {
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+  }
+  .price-desc {
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 24px;
+    min-height: 40px;
+  }
+  .price-card .btn-primary,
+  .price-card .btn-secondary {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .btn-secondary {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #FFF3F0;
+    border-radius: 768px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+    transition: background 0.2s;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.14); }
+  .price-features {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .price-features li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.75);
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  .price-features li:first-child { border-top: none; padding-top: 0; }
+  .price-features svg {
+    width: 15px; height: 15px; flex-shrink: 0;
+    color: rgba(255,255,255,0.4);
+  }
+
+  /* FAQ */
+  .faq-list {
+    max-width: 720px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .faq-item {
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 4px 20px;
+  }
+  .faq-item summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 18px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 15px;
+    color: #FFF3F0;
+    font-weight: 500;
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary .chevron {
+    flex-shrink: 0;
+    width: 18px; height: 18px;
+    transition: transform 0.2s;
+    color: rgba(255,255,255,0.45);
+  }
+  .faq-item[open] summary .chevron { transform: rotate(180deg); }
+  .faq-item p {
+    font-size: 14px;
+    line-height: 1.65;
+    color: rgba(255,255,255,0.5);
+    padding-bottom: 20px;
+    max-width: 620px;
+  }
+
+  /* CTA */
+  .cta-section {
+    background: #1c1a1e;
+    padding: 100px 24px;
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  .cta-section .section-title { margin-bottom: 16px; }
+  .cta-section .section-sub {
+    max-width: 480px;
+    margin: 0 auto 32px;
+  }
+
+  /* Footer */
+  footer {
+    background: #171717;
+    padding: 64px 24px 32px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  .footer-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+  .footer-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin-bottom: 56px;
+  }
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 18px;
+    color: #FFF3F0;
+  }
+  .footer-cols {
+    display: flex;
+    gap: 64px;
+    flex-wrap: wrap;
+  }
+  .footer-col h6 {
+    font-size: 13px;
+    color: #FFF3F0;
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  .footer-col a {
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    transition: color 0.2s;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    text-align: left;
+  }
+  .footer-col a:hover { color: #FFF3F0; }
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+  }
+  .footer-bottom a { color: rgba(255,255,255,0.4); text-decoration: none; }
+  .footer-bottom a:hover { color: #FFF3F0; }
+
+  @media (max-width: 860px) {
+    .feature-grid, .pricing-grid { grid-template-columns: 1fr; }
+    .section-head { border-bottom: none; padding-bottom: 0; margin-bottom: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="logo-icon">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="5" height="5" rx="1.5" fill="currentColor" opacity="0.9"/>
+        <rect x="8" y="1" width="5" height="5" rx="1.5" fill="currentColor" opacity="0.7"/>
+        <rect x="1" y="8" width="5" height="5" rx="1.5" fill="currentColor" opacity="0.7"/>
+        <rect x="8" y="8" width="5" height="5" rx="1.5" fill="currentColor" opacity="0.5"/>
+      </svg>
+    </div>
+    Fora.
+  </a>
+
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="mailto:contact@fora.so">Contact</a></li>
+  </ul>
+
+  <div class="nav-actions">
+    <a href="https://auth.fora.so/login" class="btn-login">Login</a>
+    <a href="https://auth.fora.so/signup" class="btn-primary">Get started</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-glow"></div>
+
+  <div class="hero-content">
+    <div class="chip fade-up">Community platform for creators</div>
+    <h1 class="hero-title fade-up delay-1">Your community<br>deserves its own home.</h1>
+    <p class="hero-sub fade-up delay-2">Fora gives creators, educators, and coaches a fully branded space with courses, events, discussions, and members.</p>
+    <a href="https://auth.fora.so/signup" class="btn-primary-lg fade-up delay-3">Get started free</a>
+  </div>
+
+  <!-- App Mockup -->
+  <div class="mockup-wrapper fade-up" style="transition-delay:0.4s;">
+    <div class="mockup-frame" style="position:relative;">
+      <!-- Sidebar -->
+      <div class="mockup-sidebar">
+        <div class="sidebar-search">
+          <div class="sidebar-search-bar"></div>
+          <span style="color:rgba(255,255,255,0.3);font-size:12px;">⌕</span>
+        </div>
+
+        <div class="sidebar-item active">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg>
+          Overview
+        </div>
+        <div class="sidebar-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h12M2 5.5c0 4 2 6 6 7.5 4-1.5 6-3.5 6-7.5V5.5"/></svg>
+          Chat
+        </div>
+        <div class="sidebar-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,12 5,8 8,10 11,5 14,7"/></svg>
+          Analytics
+        </div>
+        <div class="sidebar-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 3V2M11 3V2"/></svg>
+          Courses
+        </div>
+        <div class="sidebar-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 6.5h12M5 2v2M11 2v2"/></svg>
+          Events
+        </div>
+        <div class="sidebar-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+          Members
+        </div>
+      </div>
+
+      <!-- Main content area with the hero image -->
+      <div class="mockup-main">
+        <img
+          src="https://framerusercontent.com/images/9n8OOMGCaEmCo8MDRO2tHo17cQ.png?scale-down-to=1024&width=2400&height=1345"
+          alt="Fora dashboard preview"
+          style="width:100%;height:100%;object-fit:cover;display:block;"
+        />
+      </div>
+
+      <!-- Cookie Banner -->
+      <div class="cookie-banner">
+        <p>We use cookies to personalize content, run ads, and analyze traffic. Read our <a href="#">Cookie Policy</a>.</p>
+        <button class="cookie-btn">Okay</button>
+        <div style="clear:both;"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TEXT SECTION -->
+<section id="about" style="background:#171717; padding: 100px 24px 80px;">
+  <div style="max-width:640px; margin:0 auto; padding: 0 40px;">
+    <div class="text-block fade-up">
+      <p>Fora is a community platform built for creators, educators, and coaches. Courses, events, discussions, and a member directory, all in one place, under one login, with one URL.</p>
+    </div>
+    <div class="text-block fade-up delay-1">
+      <p>That URL is yours. Every community on Fora runs on its own subdomain or a custom domain you own. Members sign up and sign in inside your branded space. They never see Fora's name, and they never should.</p>
+    </div>
+    <div class="text-block fade-up delay-2">
+      <p>You set it up in minutes. Fora handles the routing, the auth, and the infrastructure in the background. What your members experience is entirely yours.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" class="section">
+  <div class="section-inner">
+    <div class="section-head fade-up">
+      <div class="section-head-left">
+        <div class="chip" style="margin-bottom:16px;">Core Features</div>
+        <h2 class="section-title">One platform to run right <span class="dim">your entire community.</span></h2>
+      </div>
+      <div class="section-head-right">
+        <p class="section-sub">Fora brings your courses, events, discussions, and members into one space, so you stop switching between tools and start spending time with your community.</p>
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card fade-up">
+        <div class="feature-tag">Your front door</div>
+        <h4>A community overview page that sells itself.</h4>
+        <p>Customize your hero with a static color or animated gradient. Add a headline, a description, and member avatars. Your overview page is the first thing a visitor sees — make it yours.</p>
+        <div class="feature-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 12h16M4 6h16M4 18h16"/></svg>
+          First impressions that convert.
+        </div>
+      </div>
+
+      <div class="feature-card fade-up delay-1">
+        <div class="feature-tag">Friendly competition</div>
+        <h4>A leaderboard your members actually check.</h4>
+        <p>Rankings based on posts, completions, and activity — surfaced automatically. Gives your most engaged members a reason to stay and your quieter ones a reason to show up.</p>
+        <div class="feature-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 12h16M4 6h16M4 18h16"/></svg>
+          Engagement that compounds over time.
+        </div>
+      </div>
+
+      <div class="feature-card fade-up delay-2">
+        <div class="feature-tag">Courses</div>
+        <h4>Build your course the way you teach.</h4>
+        <p>Structure your content into chapters and lessons, in any order you want. Add your material, hit publish, and your members can start learning — right inside the community they already live in.</p>
+        <div class="feature-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 12h16M4 6h16M4 18h16"/></svg>
+          Courses that feel like yours, not a template.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" class="section" style="background:#1c1a1e;">
+  <div class="section-inner">
+    <div class="section-head fade-up">
+      <div class="section-head-left">
+        <div class="chip" style="margin-bottom:16px;">Pricing</div>
+        <h2 class="section-title">Clear pricing plans<br>that scale with you</h2>
+      </div>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="price-card fade-up">
+        <div class="price-label">STARTER</div>
+        <div class="price-amount"><span class="num">$9</span><span class="per">/month</span></div>
+        <p class="price-desc">Everything you need to launch your community.</p>
+        <a href="https://auth.fora.so/signup" class="btn-secondary">Get started</a>
+        <ul class="price-features">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Up to 200 members</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Fora subdomain</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Community feed &amp; chat</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Courses &amp; events</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Member profiles</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Analytics</li>
+        </ul>
+      </div>
+
+      <div class="price-card featured fade-up delay-1">
+        <div class="price-label">PRO</div>
+        <div class="price-amount"><span class="num">$19</span><span class="per">/month</span></div>
+        <p class="price-desc">For creators serious about their brand.</p>
+        <a href="https://auth.fora.so/signup" class="btn-primary">Get started</a>
+        <ul class="price-features">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Up to 5000 members</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Custom domain</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Community feed &amp; chat</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Courses &amp; events</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Member profiles</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Analytics</li>
+        </ul>
+      </div>
+
+      <div class="price-card fade-up delay-2">
+        <div class="price-label">ENTERPRISE</div>
+        <div class="price-amount"><span class="num" style="font-size:26px;">Custom price</span></div>
+        <p class="price-desc">For teams that need more control.</p>
+        <a href="mailto:contact@fora.so" class="btn-secondary">Contact us</a>
+        <ul class="price-features">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Unlimited members</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Everything in Pro</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Priority support</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Dedicated onboarding</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>SLA &amp; uptime guarantee</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Custom contract</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="section">
+  <div class="section-inner">
+    <div class="section-head fade-up">
+      <div class="section-head-left">
+        <div class="chip" style="margin-bottom:16px;">FAQ</div>
+        <h2 class="section-title">Answers to the questions that come up most.</h2>
+      </div>
+      <div class="section-head-right">
+        <p class="section-sub">Learn how Fora works, what's included in the beta, what your members experience, and what to expect as the platform grows.</p>
+      </div>
+    </div>
+
+    <div class="faq-list fade-up">
+      <details class="faq-item" open>
+        <summary>What is Fora?
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <p>Fora is a white-label community platform for creators, educators, and coaches. You get a fully branded space with courses, events, discussions, and members — all running on your own subdomain or custom domain.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How long does it take to set up?
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <p>Most communities are live in under 20 minutes. You pick a subdomain, customize your overview page, and invite your first members. No code, no infrastructure.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Do I need technical knowledge?
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <p>Not at all. Everything happens through a clean dashboard. The only technical step is adding a DNS record if you want a fully custom domain — and we walk you through it.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Is Fora really free right now?
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <p>Yes. Fora is in beta and completely free. No credit card, no trial period — just sign up and go. When paid plans launch, beta members get a permanent discount locked in.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What happens when the beta ends?
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <p>You'll get early notice before anything changes. Beta members are first to know, first to get access to paid plans, and first to lock in their discount.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="fade-up">
+    <h2 class="section-title">Your community is one sec away.</h2>
+    <p class="section-sub">Fora is in beta and free to join. Set up your space, invite your first members, and see what it feels like when everything lives in one place — under your name.</p>
+    <a href="https://auth.fora.so/signup" class="btn-primary-lg">Start for free</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <a href="#" class="footer-brand">
+        <div class="logo-icon">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="1" width="5" height="5" rx="1.5" fill="currentColor" opacity="0.9"/>
+            <rect x="8" y="1" width="5" height="5" rx="1.5" fill="currentColor" opacity="0.7"/>
+            <rect x="1" y="8" width="5" height="5" rx="1.5" fill="currentColor" opacity="0.7"/>
+            <rect x="8" y="8" width="5" height="5" rx="1.5" fill="currentColor" opacity="0.5"/>
+          </svg>
+        </div>
+        Fora.
+      </a>
+
+      <div class="footer-cols">
+        <div class="footer-col">
+          <h6>Product</h6>
+          <ul>
+            <li><a href="#about">About</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="mailto:contact@fora.so">Contact</a></li>
+            <li><a href="https://feedback.fora.so/updates">Changelog</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h6>Legal</h6>
+          <ul>
+            <li><a href="#">Terms of use</a></li>
+            <li><a href="#">Privacy policy</a></li>
+            <li><a href="#">Cookie policy</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h6>Compare</h6>
+          <ul>
+            <li><a href="#">Fora vs Skool</a></li>
+            <li><a href="#">Fora vs Circle</a></li>
+            <li><a href="#">Fora vs Mighty Networks</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© Fora. 2026. All rights reserved</span>
+      <a href="mailto:contact@fora.so">contact@fora.so</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+
+  // Trigger hero elements immediately
+  setTimeout(() => {
+    document.querySelectorAll('.hero .fade-up, .hero-content .fade-up, .mockup-wrapper').forEach(el => {
+      el.classList.add('visible');
+    });
+  }, 80);
+</script>
+</body>
+</html>

@@ -81,13 +81,16 @@ export function SlipPanel({
   const invalidCombined = duplicates.length > 0;
 
   return (
-    <Panel className="border-signal/25">
-      <PanelHeader>
-        <PanelTitle>
+    <Panel className="border-signal/30 bg-gradient-to-b from-card to-surface-1 shadow-panel-lg">
+      <PanelHeader className="bg-signal/[0.035] px-4 py-4 sm:px-5">
+        <div className="min-w-0">
+          <p className="section-label text-signal">Második lépés</p>
+          <PanelTitle className="mt-1">
           <Star className="h-4 w-4 text-signal" aria-hidden={true} />
           Top 3+3 szelvényajánlás
-        </PanelTitle>
-        <div className="flex flex-wrap items-center gap-2">
+          </PanelTitle>
+        </div>
+        <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
           <Chip tone="neutral">
             {filled} / {draft.slots.length} szerepkör
           </Chip>
@@ -204,7 +207,7 @@ export function SlipPanel({
           </p> :
         null}
 
-        <ul className="mx-auto grid w-full max-w-6xl grid-cols-1 items-stretch gap-5 lg:grid-cols-2 2xl:grid-cols-3">
+        <ul className="mx-auto grid w-full max-w-6xl grid-cols-1 items-stretch gap-4 lg:grid-cols-2 2xl:grid-cols-3">
           {draft.slots.map((slot) =>
           <SlotCard key={slot.role} slot={slot} onSwap={() => onSwap(slot.role)} />
           )}

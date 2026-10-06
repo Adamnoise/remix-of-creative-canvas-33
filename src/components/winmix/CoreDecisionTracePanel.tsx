@@ -398,12 +398,13 @@ export function CoreDecisionTracePanel({
                 <Th align="center">Kiütés-risk</Th>
                 <Th align="center">Kapuk</Th>
                 <Th align="center">Döntés</Th>
+                <Th align="center">Árnyék</Th>
                 <Th>Elsődleges ok</Th>
               </tr>
             </thead>
             <tbody>
               {trace.candidates.length === 0 ?
-              <EmptyRow colSpan={17}>
+              <EmptyRow colSpan={18}>
                   Ebben a fordulóban egyetlen mérkőzés sem adott ilyen piaci sort.
                 </EmptyRow> :
 
@@ -519,6 +520,15 @@ export function CoreDecisionTracePanel({
                   }>
                   
                       {row.slot !== null ? `CORE ${row.slot}` : row.verdict}
+                    </Td>
+                    <Td align="center" className="text-[10px]">
+                      {row.shadowVerdict?.wouldPass ?
+                        <span
+                          className="rounded-sm border border-chart-4/30 bg-chart-4/10 px-1.5 py-0.5 font-mono text-[9px] text-chart-4"
+                          title={`Bekerült volna a lazított küszöbökkel: ${row.shadowVerdict.relaxedBy.join(', ')}`}>
+                          {row.shadowVerdict.relaxedBy.join(', ')}
+                        </span> :
+                        <span className="text-muted-foreground">—</span>}
                     </Td>
                     <Td className="whitespace-normal font-sans text-[11px] text-muted-foreground">
                       <strong className="text-foreground">{row.primaryCause}</strong> —{' '}

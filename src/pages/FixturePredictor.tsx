@@ -24,6 +24,7 @@ import type {
 import { MetricCard, MetricGrid } from '../components/winmix/MetricCard';
 import { Collapsible } from '../components/winmix/Collapsible';
 import { CoreDecisionTracePanel } from '../components/winmix/CoreDecisionTracePanel';
+import { BttsShadowValidationPanel } from '../components/winmix/BttsShadowValidationPanel';
 import { CoreGateStatus } from '../components/winmix/CoreGateStatus';
 import { CoreStrategySelector } from '../components/winmix/CoreStrategySelector';
 import { FixtureCard } from '../components/winmix/FixtureCard';
@@ -43,6 +44,7 @@ import { EmptyCoreReasons } from '../components/winmix/EmptyCoreReasons';
 import { ProductionGatesPanel } from '../components/winmix/ProductionGatesPanel';
 import { ZeroCoreNotice } from '../components/winmix/ZeroCoreNotice';
 import { MobileSlipBar } from '../components/winmix/MobileSlipBar';
+import { buildCoreTrace } from '../utils/coreTrace';
 
 const INTRO =
 'Állítsd össze a hét 8 angol és 8 spanyol mérkőzését, majd futtasd az ' +
@@ -197,10 +199,25 @@ export function FixturePredictor() {
   const totalFixtures = round.fixtures.length;
 
   return (
-    <div className="flex flex-col gap-4 md:gap-5">
-      <PageHeader icon={Target} title="Forduló Prediktor — Top 3+3" intro={INTRO} />
+    <div className="predictor-page mx-auto flex w-full max-w-[1480px] flex-col gap-5 pb-8 md:gap-6">
+      <PageHeader
+        icon={Target}
+        eyebrow="WINMIX / DÖNTÉSTÁMOGATÁS"
+        title="Forduló Prediktor — Top 3+3"
+        intro={INTRO}
+        className="rounded-2xl border border-border-subtle bg-gradient-to-br from-card via-card to-surface-1 px-4 py-4 shadow-panel sm:px-6 sm:py-5" />
 
-      <MetricGrid>
+      <section aria-label="Forduló áttekintése" className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="section-label">Gyors áttekintés</p>
+            <p className="mt-1 text-ui-xs text-muted-foreground">A forduló állapota egy pillantásra.</p>
+          </div>
+          <span className="rounded-full border border-signal/20 bg-signal-soft px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-label text-signal">
+            {round.name}
+          </span>
+        </div>
+        <div className="predictor-overview-grid"><MetricGrid>
         <MetricCard
           icon={ListChecks}
           label="Összeállított párok"
@@ -242,7 +259,8 @@ export function FixturePredictor() {
           }
           subClassName={duplicates.length > 0 ? 'text-negative' : undefined} />
         
-      </MetricGrid>
+        </MetricGrid></div>
+      </section>
 
       {noData ?
       <StateEmptyPanel
@@ -260,10 +278,13 @@ export function FixturePredictor() {
       null}
 
       {/* --- The round ----------------------------------------------------- */}
-      <Panel>
-        <PanelHeader>
-          <PanelTitle>{round.name}</PanelTitle>
-          <PanelActions>
+      <Panel className="overflow-visible border-signal/20 bg-gradient-to-b from-card to-surface-1 shadow-panel-lg">
+        <PanelHeader className="border-signal/10 bg-surface-2/70 px-4 py-4 sm:px-6">
+          <div className="min-w-0">
+            <p className="section-label text-signal">Első lépés</p>
+            <PanelTitle className="mt-1 text-lg">{round.name}</PanelTitle>
+          </div>
+          <PanelActions className="w-full justify-between sm:w-auto sm:justify-end">
             <span className="text-ui-xs tabular-nums text-muted-foreground">
               {ready.length} / {totalFixtures} pár kész
             </span>
@@ -301,7 +322,11 @@ export function FixturePredictor() {
           </PanelActions>
         </PanelHeader>
 
-        <div className="flex flex-col gap-4 p-4 sm:p-5">
+        <div className="flex flex-col gap-4 p-4 sm:p-6">
+          <div className="flex items-start gap-3 rounded-xl border border-signal/15 bg-signal-soft/50 px-3.5 py-3 text-ui-xs leading-relaxed text-muted-foreground">
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-signal text-[10px] font-bold text-signal-foreground">1</span>
+            <span>Válaszd ki a hazai és vendég csapatot minden sorban. A rendszer automatikusan jelzi a talált mintákat, majd az elemzés után összeállítja a Top 3+3 ajánlást.</span>
+          </div>
           {progress ?
           <StateProgress
             label="Mintakeresés…"
@@ -325,7 +350,7 @@ export function FixturePredictor() {
             </StateNotice> :
           null}
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="predictor-builder-grid grid grid-cols-1 gap-4 lg:grid-cols-2">
             {LEAGUES.map((league) =>
             <RoundBuilder
               key={league}
@@ -346,8 +371,8 @@ export function FixturePredictor() {
            The slip is pinned on wide screens: previously it sat above a long
            list of fixture cards, so comparing a card against the current
            selection meant scrolling back and forth. */}
-      <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_460px]">
-        <div className="flex min-w-0 flex-col gap-4">
+      <div className="predictor-workspace grid min-w-0 items-start grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_400px] 2xl:grid-cols-[minmax(0,1fr)_460px]">
+        <div className="flex min-w-0 flex-col gap-5">
           <CoreStrategySelector
             value={strategy}
             readout={draft?.strategy ?? null}
@@ -375,7 +400,21 @@ export function FixturePredictor() {
             readout={draft?.strategy ?? null}
             familyCodes={activeSpec.codes}
             profileVeto={activeSpec.profileVeto} />
-          
+
+
+          {(() => {
+            const trace = draft?.strategy ? buildCoreTrace({
+              analyses,
+              readout: draft.strategy,
+              familyCodes: activeSpec.codes,
+              profileVeto: activeSpec.profileVeto
+            }) : null;
+            return trace ? (
+              <BttsShadowValidationPanel
+                candidates={trace.candidates}
+                roundId={round.name} />
+            ) : null;
+          })()}
 
           <PatternConfidenceSummary patterns={allPatterns} />
 
@@ -396,7 +435,7 @@ export function FixturePredictor() {
               <h2 className="text-ui-base font-medium tracking-tight text-foreground">
                 Mérkőzéskártyák és minták ({analyses.length})
               </h2>
-              <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="predictor-card-grid grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
                 {analyses.map((analysis) =>
               <FixtureCard key={analysis.fixtureId} analysis={analysis} />
               )}
@@ -406,7 +445,7 @@ export function FixturePredictor() {
         </div>
 
         {draft ?
-        <div className="order-first min-w-0 xl:order-none xl:sticky xl:top-0 xl:self-start">
+        <div className="predictor-slip order-first min-w-0 xl:order-none xl:sticky xl:top-4 xl:self-start">
             <SlipPanel
             draft={draft}
             combinedProb={combined}

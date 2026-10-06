@@ -9,6 +9,7 @@ import {
   auditedCanonicalCandidates,
   canonicalWinnerReason,
   candidateKeyOf,
+  computeBttsShadowVerdict,
   coreQualityFailures,
   coreTierOf,
   effectiveDecisionOf,
@@ -16,6 +17,7 @@ import {
   gateFailuresForKind,
   perMarketModelSpread,
   rawDuplicateGroupCount,
+  type BttsShadowVerdict,
   type CanonicalStatus,
   type GateCondition,
   type StrategyReadout } from
@@ -253,6 +255,8 @@ export interface CoreTraceCandidate {
   marqueePenalty: number;
   marqueeApplied: boolean;
   marqueeReasons: string[];
+  /** BTTS shadow verdict — would this candidate pass under relaxed thresholds? */
+  shadowVerdict: BttsShadowVerdict | null;
 }
 
 export interface CoreTraceStage {
@@ -695,7 +699,8 @@ export function buildCoreTrace(input: CoreTraceInput): CoreTrace {
       marqueeLevel: pattern.code === 'BTTS' ? pattern.marqueeRisk?.level ?? 'none' : 'none',
       marqueePenalty: pattern.code === 'BTTS' ? pattern.marqueeRisk?.penalty ?? 0 : 0,
       marqueeApplied: pattern.code === 'BTTS' ? pattern.marqueeRisk?.applied ?? false : false,
-      marqueeReasons: pattern.code === 'BTTS' ? pattern.marqueeRisk?.reasons ?? [] : []
+      marqueeReasons: pattern.code === 'BTTS' ? pattern.marqueeRisk?.reasons ?? [] : [],
+      shadowVerdict: computeBttsShadowVerdict(pattern)
     };
     return { ...base, ...primaryCauseOf(base) };
   });
@@ -939,7 +944,7 @@ export function traceToText(trace: CoreTrace): string {
   lines.push(`Tölcsér-integritás: ${trace.funnelOk ? 'rendben' : 'HIBA — lásd a lépések megjegyzéseit'}`);
   lines.push('', '## 4. Nyers rekordok (audit populáció)');
   trace.candidates.forEach((candidate) => {
-    lines.push([candidate.fixture, `id ${candidate.id}`, `generátor ${candidate.patternType}`, `kód ${candidate.code}`, `modell ${pct(candidate.modelProb)}`, `H2H ${pct(candidate.h2hRate)}`, `stab ${candidate.stability.toFixed(0)}`, `ESS ${candidate.ess.toFixed(2)}`, candidate.quadrant, candidate.agreement, `sáv ${candidate.bandLabel ?? '—'}${candidate.widened ? ' (bővített)' : ''}`, `n ${candidate.observations}/${candidate.required}`, `hits ${candidate.hits ?? '—'}`, `jelzett ${pct(candidate.signalledProb)}`, `mért ${pct(candidate.measuredRate)}`, `Wilson ${pct(candidate.ciLo)}–${pct(candidate.ciHi)}`, `verdikt ${candidate.evidence}`, `kapu ${candidate.gateSurvivor ? 'átjutott' : 'elbukott'}`, `kanonikus ${candidate.canonicalStatus ?? '—'}${candidate.mergedInto ? ` → ${candidate.mergedInto}` : ''}`, candidate.canonicalReason ?? '', `rangadó ${candidate.marqueeRegistered ? `${candidate.marqueeLevel} · −${candidate.marqueePenalty}${candidate.marqueeApplied ? ' (éles)' : ' (árnyék)'}` : 'nem jelölt'}`, candidate.marqueeReasons[0] ?? '', candidate.slot !== null ? `CORE ${candidate.slot}` : candidate.verdict, candidate.primaryCause].join(' | '));
+    lines.push([candidate.fixture, `id ${candidate.id}`, `generátor ${candidate.patternType}`, `kód ${candidate.code}`, `modell ${pct(candidate.modelProb)}`, `H2H ${pct(candidate.h2hRate)}`, `stab ${candidate.stability.toFixed(0)}`, `ESS ${candidate.ess.toFixed(2)}`, candidate.quadrant, candidate.agreement, `sáv ${candidate.bandLabel ?? '—'}${candidate.widened ? ' (bővített)' : ''}`, `n ${candidate.observations}/${candidate.required}`, `hits ${candidate.hits ?? '—'}`, `jelzett ${pct(candidate.signalledProb)}`, `mért ${pct(candidate.measuredRate)}`, `Wilson ${pct(candidate.ciLo)}–${pct(candidate.ciHi)}`, `verdikt ${candidate.evidence}`, `kapu ${candidate.gateSurvivor ? 'átjutott' : 'elbukott'}`, `kanonikus ${candidate.canonicalStatus ?? '—'}${candidate.mergedInto ? ` → ${candidate.mergedInto}` : ''}`, candidate.canonicalReason ?? '', `rangadó ${candidate.marqueeRegistered ? `${candidate.marqueeLevel} · −${candidate.marqueePenalty}${candidate.marqueeApplied ? ' (éles)' : ' (árnyék)'}` : 'nem jelölt'}`, candidate.marqueeReasons[0] ?? '', candidate.slot !== null ? `CORE ${candidate.slot}` : candidate.verdict, candidate.primaryCause, candidate.shadowVerdict?.wouldPass ? `ÁRNYÉK: bekerült volna (${candidate.shadowVerdict.relaxedBy.join(', ')})` : 'ÁRNYÉK: —'].join(' | '));
   });
   lines.push('', '## 4c. Nyers rekord-duplikátumok — nem számolnak a kanonikus Core-nevezőbe');
   if (trace.duplicates.length === 0) lines.push('Nincs duplikált nyers rekord ebben a futásban.');else
